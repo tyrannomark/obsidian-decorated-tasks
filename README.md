@@ -33,7 +33,7 @@ Thus the decoration is dependent on, and reflects, the tags used in a task (so l
 5. Run the script with the command `python3 mkColouredTasks.py`.
 6. In Obsidian open the `Appearance` tab in settings, and scroll down to the bottom. Enable the `task-type-decorations` CSS file.
 7. Restart is a good idea at this point.
-8. Make a sample task combination on any page in obsidian. I am assuming that you haven't changed the file yet, and that you are using the symbol `༒` to mark tasks as available for management by the `tasks` plugin. Here is an example:
+8. Make a sample task combination on any page in Obsidian. I am assuming that you haven't changed the file yet, and that you are using the symbol `༒` to mark tasks as available for management by the `tasks` plugin. Here is an example:
 ~~~md
 - [ ] Some action needing to be done. ༒ #meet  ⏳ 1920-09-29
 
