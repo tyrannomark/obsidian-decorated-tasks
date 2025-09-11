@@ -24,3 +24,22 @@ As seen in the above example, not all tags have to receive the same decoration. 
 
 Thus the decoration is dependent on, and reflects, the tags used in a task (so long as CSS for those tags is established) by the program `mkColouredTasks.py`.
 
+## How to Use
+
+1. Download the file `mkColouredTasks.py` from the `src/` directory in this repository.
+2. Place it in a sister directory to the `snippets` directory which lies in your `.obsidian` directory in your vault. The python script cannot be in the `snippets` directory itself, or the snippets will not load.
+3. Edit the list of tags at the top of the file, that give the value for the variable `Tags`.
+4. Modify the dictionaries for `Parameters[TagText]` for `TagText` corresponding to each tag you defined in `Tags`. Specify for each value, the foreground and background colours you would like for the text and the checkbox. Also specify any prefix you would like to see with this class of tasks.
+5. Run the script with the command `python3 mkColouredTasks.py`.
+6. In Obsidian open the `Appearance` tab in settings, and scroll down to the bottom. Enable the `task-type-decorations` CSS file.
+7. Restart is a good idea at this point.
+8. Make a sample task combination on any page in obsidian. I am assuming that you haven't changed the file yet, and that you are using the symbol `༒` to mark tasks as available for management by the `tasks` plugin. Here is an example:
+~~~md
+- [ ] Some action needing to be done. ༒ #meet  ⏳ 1920-09-29
+
+```tasks
+happens on 1920-09-29
+```
+~~~
+
+Hopefully, the upper and the lower reflection of the same tasks should look similar. The main difference will be that the coloured text block includes the checkbox in the upper expression of the todo, but the in the `tasks` rendering of the todo, the checkbox is outdented to the left, and is not surrounded by the coloured text block.
