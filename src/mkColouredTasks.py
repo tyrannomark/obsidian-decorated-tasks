@@ -1,4 +1,6 @@
+#cell 1
 ## ##### EDIT THESE SETTINGS TO CHANGE COLOURS, ETC. ##### ##
+## v0.2
 ## This PYTHON code creates a CSS snippet for Obsidian which will colorise a todo, and prefix set
 ## text (here we use representative emojis), to make similar tasks more readily identifiable.
 ##
@@ -7,305 +9,256 @@
 ##   the tag which comes later in the `Tags` list will have priority. But the tag for the other
 ##   group of todos will be marked with the colours of tags in those todos.
 
+#cell 4
+Specifications = """
+#* @taskscheckboxes mr: 16px
+#L0 #L1 #L2 #L3 #L4 #L5 #L6 #L7 #L8 @othertags bg: silver fg: black
+#L0 @body bg: black fg: wheat @thistag bg: wheat fg: black @checkbox bg: slategrey @backlink fg: mistyrose
+#L1 @body bg: darkred fg: wheat @thistag bg: wheat fg: darkred @checkbox bg: black @backlink fg: mistyrose
+#L2 @body bg: indianred fg: white @thistag bg: white fg: indianred @checkbox bg: crimson @backlink fg: white
+#L3 @body bg: orange fg: black @thistag bg: black fg: orange @checkbox bg: teal @backlink @backlink fg: olivedrab
+#L4 @body bg: gold fg: black @thistag bg: black fg: gold @checkbox bg: royalblue @backlink @backlink fg: olivedrab
+#L5 @body bg: darkgreen fg: wheat @thistag bg: wheat fg: darkgreen @checkbox bg: seagreen @backlink fg: mistyrose
+#L6 @body bg: paleturquoise fg: black @thistag bg: black fg: paleturquoise @checkbox bg: fuchsia @backlink fg: olivedrab
+#L7 @body bg: darkblue fg: yellow @thistag bg: yellow fg: darkblue @checkbox bg: yellow @backlink fg: mistyrose
+#L8 @body bg: darkviolet fg: wheat @thistag bg: wheat fg: darkviolet @checkbox bg: wheat @backlink fg: mistyrose
+
+#meet @prefix content: 👥 @thistag bg: black fg: silver
+#do @prefix content: 🪚 @thistag bg: black fg: silver
+#dowith @prefix content: 🤼 @thistag bg: black fg: silver
+#write @prefix content: ✍️ @thistag bg: black fg: silver
+#code @prefix content: 🖥️ @thistag bg: black fg: silver
+#sm @prefix content: ❓ @thistag bg: black fg: silver
+#event @prefix content: 🗓️ @thistag bg: black fg: silver
+#project @prefix content: 📽️ @thistag bg: black fg: silver
+#dream @prefix content: ⭐ @thistag bg: black fg: silver
+#waitfor @prefix content: 🕰️ @thistag bg: black fg: silver
+#shop @prefix content: 🛍️ @thistag bg: black fg: silver
+#foodshop @prefix content: 🥔 @thistag bg: black fg: silver
+#habit @prefix content: 🎠 @thistag bg: black fg: silver
+#getdoc @prefix content: 📃 @thistag bg: black fg: silver
+#paper @prefix content: 🧻 @thistag bg: black fg: silver
+#paper @prefix content: 📘 @thistag bg: black fg: silver
+#mesg @prefix content: 📧 @thistag bg: black fg: silver
+#deadline @prefix content: ☠️ @thistag bg: linen fg: sienna
+""".split("\n")
+
+#cell 6
+import re
+from pprint import pprint
+
+#cell 8
 ## Put the tags you want to colorise here, space-separated
-Tags = "meet do dowith write code sm event project dream waitfor shop foodshop habit getdoc".split()
+## To use all the tags defined below, leave this as an empty string
+Tags = ("meet do dowith write code sm event project dream "
+        "waitfor shop foodshop habit getdoc paper").split()
 
-## I am going to define some colours, because I want to reuse some colours across particular
-## tag types. It's good to do this, rather than get lost in the hexadecimal specs for colours.
-##
-White = "white"
-Black = "black"
+#cell 13
+ContentByCode = {}
 
-Red   = "red"
-Green = "green"
-Blue  = "blue"
+contentByCode = lambda code: (
+    ContentByCode[code] if code in ContentByCode else code
+)
 
-Yellow = "yellow"
+#cell 14
+SpecByProp = {}
+SpecByProp["content"] = lambda code: (
+    "content: \""+contentByCode(code)+"\"; padding-left: 12px; margin-right: 6px; font-size: 48px;"
+)
+SpecByProp["bg"]   = lambda word: "background-color: "+word+";"
+SpecByProp["fg"]   = lambda word: "color: "+word+";"
+SpecByProp["pl"]   = lambda word: "padding-left: "+word+";"
+SpecByProp["pr"]   = lambda word: "padding-right: "+word+";"
+SpecByProp["ml"]   = lambda word: "margin-left: "+word+";"
+SpecByProp["mr"]   = lambda word: "margin-right: "+word+";"
+SpecByProp["size"] = lambda word: "font-size: "+word+";"
 
-DarkRed     = "#830000"
-StrongRed   = "#c80000"
-Gold        = "#838300"
-DarkViolet  = "#630063"
-DarkGreen   = "#008300"
-DarkBlue    = "#000083"
-SkyBlue     = "#a8b8ea"
-LightBlue   = "#dfdff8"
-Turquoise   = "#4c8383"
-Wheat       = "#f5deb3"
-LightYellow = "#dedea8"
-LightGreen  = "#def8df"
-Brown       = "#964B00"
+#cell 16
+def templates2fns( *args ):
+    return lambda tag: [
+        arg.format(**{"tag": tag}) for arg in args
+    ]
 
-## ##### DEFINE THE PARAMETER SETTINGS FOR EACH HASHTAG TYPE ##### ##
+PathByPart = {}
 
-Parameters = {}
-#-------------------------------------- For meetings
-TagText = "meet"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),       ## We define this one for a nice heading to the CSS group
-  "categoryName": TagText,               ## We need this to identify just the elements around this tag
-  "prefix": "👥",                       ## This is the prefix emoji you want for this hashtag
-  "backgroundColour": DarkRed,           ## The background colour for the task listing
-  "foregroundColour": White,             ## The foreground colour for the task listing
-  "checkboxBackgroundColour": Gold,      ## The background colour for the checkbox - i.e. its body
-  "checkboxForegroundColour": White      ## The colour for the outline of the checkbox
-}
-#-------------------------------------- For general things to do
-TagText = "do"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "🪚",
-  "backgroundColour": Gold,
-  "foregroundColour": White,
-  "checkboxBackgroundColour": StrongRed,
-  "checkboxForegroundColour": Blue
-}
-#-------------------------------------- For things to do with others
-TagText = "dowith"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "🤼",
-  "backgroundColour": Gold,
-  "foregroundColour": White,
-  "checkboxBackgroundColour": StrongRed,
-  "checkboxForegroundColour": Blue
-}
-#-------------------------------------- For things you need to write
-TagText = "write"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "✍️",
-  "backgroundColour": LightYellow,
-  "foregroundColour": DarkRed,
-  "checkboxBackgroundColour": Yellow,
-  "checkboxForegroundColour": StrongRed
-}
-#-------------------------------------- For programs or snippets we need to write
-TagText = "code"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "👩‍💻",
-  "backgroundColour": LightYellow,
-  "foregroundColour": Black,
-  "checkboxBackgroundColour": Black,
-  "checkboxForegroundColour": Black
-}
-#-------------------------------------- For things to do someday / maybe
-TagText = "sm"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "❓",
-  "backgroundColour": White,
-  "foregroundColour": Black,
-  "checkboxBackgroundColour": Wheat,
-  "checkboxForegroundColour": White
-}
-#-------------------------------------- For events - things that happen at a time, e.g. a concert
-TagText = "event"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "🗓️",
-  "backgroundColour": "#838300",
-  "foregroundColour": "#f3f3f3",
-  "checkboxBackgroundColour": "#c80000",
-  "checkboxForegroundColour": "#0000e8"
-}
-#-------------------------------------- A multi-step activity, usually with a goal
-TagText = "project"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "📽️",
-  "backgroundColour": LightBlue,
-  "foregroundColour": Turquoise,
-  "checkboxBackgroundColour": White,
-  "checkboxForegroundColour": Black
-}
-#-------------------------------------- Because I don't express these often, I am making room
-TagText = "dream"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "⭐",
-  "backgroundColour": White,
-  "foregroundColour": StrongRed,
-  "checkboxBackgroundColour": Gold,
-  "checkboxForegroundColour": StrongRed
-}
-#-------------------------------------- Events, outcomes I am waiting for from others / the world
-TagText = "waitfor"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "🕰️",
-  "backgroundColour": Wheat,
-  "foregroundColour": DarkGreen,
-  "checkboxBackgroundColour": LightGreen,
-  "checkboxForegroundColour": DarkBlue
-}
-#-------------------------------------- Things I should buy at the earliest opportunity
-TagText = "shop"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "🛍️",
-  "backgroundColour": DarkViolet,
-  "foregroundColour": White,
-  "checkboxBackgroundColour": DarkGreen,
-  "checkboxForegroundColour": White
-}
-#-------------------------------------- Food I should buy at the earliest opportunity
-TagText = "foodshop"
-Parameters[TagText] = Parameters["shop"].copy()
-Parameters[TagText]["categoryNAME"] = TagText.upper()
-Parameters[TagText]["categoryName"] = TagText
-Parameters[TagText]["categoryTag"]  = "#"+TagText
-Parameters[TagText]["prefix"]       = "🥔"
-#-------------------------------------- Activities that are part of ongoing habit-construction
-TagText = "habit"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "🎠",
-  "backgroundColour": Wheat,
-  "foregroundColour": Brown,
-  "checkboxBackgroundColour": Brown,
-  "checkboxForegroundColour": White
-}
-#-------------------------------------- Documents to "get" from the appropriate source
-TagText = "getdoc"
-Parameters[TagText] = {
-  "categoryNAME": TagText.upper(),
-  "categoryName": TagText,
-  "categoryTag":  "#"+TagText,
-  "prefix": "📃",
-  "backgroundColour": DarkBlue,
-  "foregroundColour": White,
-  "checkboxBackgroundColour": Turquoise,
-  "checkboxForegroundColour": White
-}
-#--------------------------------------
+#cell 17
+PathByPart["body"] = templates2fns(
+    ".HyperMD-task-line:has(span.cm-tag-{tag})",
+    "li.task-list-item:has(a.tag[href=\"#{tag}\"])"
+)
+
+#cell 18
+PathByPart["prefix"] = templates2fns(
+    ".HyperMD-task-line:has(span.cm-tag-{tag}) span:nth-of-type(2):before",
+    "li.task-list-item:has(a.tag[href=\"#{tag}\"]) > span:first-of-type:before"
+)
+
+#cell 19
+PathByPart["checkbox"] = templates2fns(
+    ".HyperMD-task-line:has(span.cm-tag-{tag}) input.task-list-item-checkbox",
+    "li.task-list-item:has(a.tag[href=\"#{tag}\"]) input.task-list-item-checkbox"
+)
+
+#cell 20
+PathByPart["taskscheckboxes"] = templates2fns(
+    "li.task-list-item:has(a.tag) input.task-list-item-checkbox"
+)
+
+#cell 21
+PathByPart["alltags"] = templates2fns(
+    ".HyperMD-task-line span.cm-hashtag",
+    "li.task-list-item:has(a.tag) span.task-description a.tag"
+)
+
+#cell 22
+PathByPart["othertags"] = templates2fns(
+    ".HyperMD-task-line:has(span.cm-tag-{tag}) span.cm-hashtag",
+    "li.task-list-item:has(a.tag[href=\"#{tag}\"]) span.task-description a.tag"
+)
+
+#cell 23
+PathByPart["thistag"] = templates2fns(
+    ".HyperMD-task-line:has(span.cm-tag-{tag}) span.cm-hashtag.cm-tag-{tag}",
+    "li.task-list-item:has(a.tag[href=\"#{tag}\"]) span.task-description a.tag[href=\"#{tag}\"]"
+)
+
+#cell 25
+PathByPart["backlink"] = templates2fns(
+    "li.task-list-item:has(a.tag[href=\"#{tag}\"]) span.task-extras span.tasks-backlink",
+    "li.task-list-item:has(a.tag[href=\"#{tag}\"]) span.task-extras span.tasks-backlink a"
+)
+
+#cell 26
+PathByPart["allbacklinks"] = templates2fns(
+    "li.task-list-item:has(span.tasks-backlink) span.task-extras span.tasks-backlink",
+    "li.task-list-item:has(span.tasks-backlink) span.task-extras span.tasks-backlink a"
+)
+
+#cell 28
+def getTypeWord( specification ):
+    if not specification: return []
+    words = [
+        s
+        for s in re.split( r'\s+', specification )
+        if s
+    ]
+    return [
+        (
+            ("tag",word[1:])       if word[0]  == "#" else
+            ("part",word[1:])      if word[0]  == "@" else
+            ("property",word[:-1]) if word[-1] == ":" else
+            ("value",word)
+        )
+        for word in words
+    ]
+
+Specifications0_1 = map( getTypeWord, Specifications )
+Specifications1 = list( filter( lambda i: not not i, Specifications0_1 ) )
+
+#cell 29
+print( Specifications1 )
+
+#cell 30
+def findSubseqInSeq(subsequence,sequence,spos=0,pos=0,):
+    ## print( "findSubseqInSeq:",subsequence[0], sequence[0], pos )
+    if spos >= len(subsequence):
+        yield []
+        return None
+    if pos >= len(sequence):
+        return None
+    if sequence[pos] in subsequence[:spos]:
+        if sequence[pos-1] != subsequence[spos-1]: return None
+    if subsequence[spos] == sequence[pos]:
+        for rest in findSubseqInSeq(subsequence,sequence,spos+1,pos+1):
+            yield [pos] + rest
+    for rest in findSubseqInSeq(subsequence,sequence,spos,pos+1):
+        yield rest
+
+#cell 31
+TypeSequence = "tag/part/property/value".split("/")
+
+#cell 32
+get = lambda i: lambda a: a[i]
+
+def collectSubsequences(sequence,fkey,fval):
+    def f(l):
+        keys = list( map( fkey, l ) )
+        vals = list( map( fval, l ) )
+        ## print( list(keys) )
+        ## print( list(vals) )
+        seqMatches = findSubseqInSeq( sequence, keys )
+        return [
+            [ vals[i] for i in seq ]
+            for seq in seqMatches
+        ]
+    return f
 
 
-## ##### DO NOT EDIT BELOW THIS LINE (UNLESS YOU WANT TO) ##### ##
+## print( Specifications1 )
+Specifications1_1 = map(
+    collectSubsequences(TypeSequence,get(0),get(1)),
+    Specifications1
+)
+## print( Specifications1_1 )
+Specifications2 = [
+    i
+    for ii in Specifications1_1
+    for i in ii
+]
+print( Specifications2 )
 
-## This format defines the CSS specifications for one hashtag, but parameterised
-##   by %s whenever there is a value to fill in.
+#cell 33
+enlist = lambda x: [x]
 
-Format = """
-/* === %s === */
-.HyperMD-task-line:has(span.cm-tag-%s) span:nth-of-type(2):before {
-  content: "%s ";
-  background-color: "#c0a0a0";
-  padding-left: 6px;
-}
-li.task-list-item:has(a.tag[href="#%s"]) > span:first-of-type:before {
-  content: "%s ";
-  background-color: "#c0a0a0";
-  padding-left: 6px;
-  margin-left: 6px;
-}
-.HyperMD-task-line:has(span.cm-tag-%s) {
-  background-color: %s !important;
-  color: %s  !important;
-  border-radius: 6px;
-  padding-left: 6px;
-}
-li.task-list-item:has(a.tag[href="#%s"]) {
-  background-color: %s !important;
-  color: %s  !important;
-  border-left: none !important;
-  /* border-radius: 6px;
-  padding: 6px; */
-}
-.HyperMD-task-line:has(span.cm-tag-%s) input.task-list-item-checkbox {
-  background-color: %s !important;
-  color: %s  !important;
-  border-left: none !important;
-  border-radius: 6px;
-  padding: 6px;
-}
-li.task-list-item:has(a.tag[href="#%s"]) input.task-list-item-checkbox {
-  background-color: %s !important;
-  color: %s  !important;
-  border-left: none !important;
-  /* border-radius: 6px;
-  padding: 6px; */
-  /* margin-inline-start: 0 !important; */
-  /* left: -45px; */
-}
-li.task-list-item:has(a.tag[href="#%s"]) span {
-  padding-left: 6px !important;
-}
-a.tag[href="#%s"] {
-  background-color: %s !important;
-  color: %s !important;
-  border-radius: 4px;
-  padding: 0 4px;
-}
+def enlistAdjacentKV(fkey,fval):
+    def f( l ):
+        indices = list( map( enlist, map( enlist, range(len( l )) ) ) )
+        keys = list( map( fkey, l ) )
+        vals = list( map( fval, l ) )
+        indexGroups = lambda x,y: (
+            x[:-1]+[x[-1]+y[0]]+y[1:] if keys[x[-1][-1]] == keys[y[0][0]] else
+            x+y
+        )
+        iGroups = indices[0]
+        for i in indices[1:]: iGroups = indexGroups( iGroups, i )
+        return [
+            [
+                keys[group[0]],
+                [ vals[i] for i in group ]
+            ]
+            for group in iGroups
+        ]
+    return f
 
-/* Live Preview */
-span.cm-hashtag.cm-tag-%s {
-  background-color: %s !important;
-  color: %s !important;
-  border-radius: 4px;
-  /* padding: 0px 6px; */
-}
-/*
-.markdown-source-view.mod-cm6 .HyperMD-list-line[data-task*="%s"] {
-  background-color: %s !important;
-  color: %s  !important;
-  border-left: 4px solid #8b5cf6;
-  border-radius: 6px;
-  padding: 6px;
-}
-*/
-\n
-"""
+#cell 34
+def groupCSS( listOfSpecs ):
+    fkey = lambda i: tuple(i[:2])
+    fval = lambda i: tuple(i[2:])
+    return enlistAdjacentKV( fkey, fval )( listOfSpecs )
 
-## The following variable defines the order in which the values from
-##   the dict for a given hashtag are mapped on to "%s" codes in the
-##   format specification.
+Specifications3 = groupCSS( Specifications2 )
+print( Specifications3 )
 
-TemplateArgumentFeatures = \
-  (
-    "categoryNAME " +
-    "categoryName prefix " +
-    "categoryName prefix " +
-    "categoryName backgroundColour foregroundColour " +
-    "categoryName backgroundColour foregroundColour " +
-    "categoryName checkboxBackgroundColour checkboxForegroundColour " +
-    "categoryName checkboxBackgroundColour checkboxForegroundColour " +
-    "categoryName " +
-    "categoryName foregroundColour backgroundColour " +
-    "categoryName foregroundColour backgroundColour " +
-    "categoryName backgroundColour foregroundColour"
-   ).split(" ")
+#cell 35
+def realise(gkeyspecs):
+    body = "  " + "\n  ".join([
+        SpecByProp[ propval[0] ](propval[1])
+        for propval in gkeyspecs[1]
+    ])
+    paths = PathByPart[gkeyspecs[0][1]](gkeyspecs[0][0])
+    return ("\n\n".join([
+        path + " {\n" + body + "\n}"
+        for path in paths
+    ]))
 
+SpecificationsCSS = "\n\n".join( map(realise, Specifications3 ) )
+print( SpecificationsCSS )
+
+#cell 37
 ## Putting it all together. We open the target .css file, then for each hashtag in `Tags`,
 ##   we work out how the values for that hashtag apply in the CSS code, and then print
 ##   that hashtag-specific code to the .css file.
 
-with open( "../snippets/task-type-decorations.css", "w" ) as f:
-  for tag in Tags:
-    if tag not in Parameters: continue
-    templateArguments =  tuple( [ Parameters[tag][feature] for feature in TemplateArgumentFeatures ] )
-    f.write( Format % templateArguments )
+with open( "snippets/task-type-decorations.css", "w" ) as f:
+    f.write( SpecificationsCSS )
 
